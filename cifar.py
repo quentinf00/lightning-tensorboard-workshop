@@ -1,14 +1,17 @@
+
+# %% [md]
 """
 Mostly taken from https://pytorch-lightning.readthedocs.io/en/latest/notebooks/lightning_examples/cifar10-baseline.html
 """
 
+# %% Imports
 import os
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
-from pl_bolts.datamodules import CIFAR10DataModule
+from pl_bolts.datamodules import TinyCIFAR10DataModule
 from pl_bolts.transforms.dataset_normalizations import cifar10_normalization
 from pytorch_lightning import LightningModule, seed_everything, Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
@@ -17,13 +20,15 @@ from torch.optim.lr_scheduler import OneCycleLR
 from torch.optim.swa_utils import AveragedModel, update_bn
 from torchmetrics.functional import accuracy
 
+# %% Global context
 seed_everything(7)
 
-PATH_DATASETS = os.environ.get('PATH_DATASETS', '.')
 AVAIL_GPUS = min(1, torch.cuda.device_count())
 BATCH_SIZE = 256 if AVAIL_GPUS else 64
 NUM_WORKERS = int(os.cpu_count() / 2)
 
+
+# %% Data
 train_transforms = torchvision.transforms.Compose([
     torchvision.transforms.RandomCrop(32, padding=4),
     torchvision.transforms.RandomHorizontalFlip(),
@@ -36,7 +41,7 @@ test_transforms = torchvision.transforms.Compose([
     cifar10_normalization(),
 ])
 
-cifar10_dm = CIFAR10DataModule(
+cifar10_dm = TinyCIFAR10DataModule(
     data_dir='./datasets',
     batch_size=BATCH_SIZE,
     num_workers=NUM_WORKERS,
@@ -45,11 +50,14 @@ cifar10_dm = CIFAR10DataModule(
     val_transforms=test_transforms,
 )
 
+# %% Model
 def create_model():
     model = torchvision.models.resnet18(pretrained=False, num_classes=10)
     model.conv1 = nn.Conv2d(3, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
     model.maxpool = nn.Identity()
     return model
+
+# %% Lightning
 
 class LitModel(LightningModule):
 
@@ -60,10 +68,10 @@ class LitModel(LightningModule):
         ):
         super().__init__()
 
-        self.save_hyperparameters()
+        self.save_hyperparameters() # The arguments are saved as hparams
         self.model = create_model()
 
-    def forward(self, x):
+    def forward(self, x): # Same as for a pytorch Module
         out = self.model(x)
         return F.log_softmax(out, dim=1)
 
@@ -71,10 +79,10 @@ class LitModel(LightningModule):
         x, y = batch
         logits = self(x)
         loss = F.nll_loss(logits, y)
-        self.log('train_loss', loss)
-        return loss
+        self.log('train_loss', loss) # Logs metrics in tensorboard
+        return loss # Lightning takes care of opt.zero_grad(), loss.backward(), opt.step() 
 
-    def evaluate(self, batch, stage=None):
+    def evaluate(self, batch, stage=None): # NOT a lightning method
         x, y = batch
         logits = self(x)
         loss = F.nll_loss(logits, y)
@@ -91,7 +99,7 @@ class LitModel(LightningModule):
     def test_step(self, batch, batch_idx):
         self.evaluate(batch, 'test')
 
-    def configure_optimizers(self):
+    def configure_optimizers(self): # Configure opt and scheduler
         optimizer = torch.optim.SGD(
             self.parameters(),
             lr=self.hparams.lr,
@@ -108,7 +116,7 @@ class LitModel(LightningModule):
             ),
             'interval': 'step',
         }
-        return {'optimizer': optimizer, 'lr_scheduler': scheduler_dict}
+        return {'optimizer': optimizer, 'lr_scheduler': scheduler_dict} # lightning will call opt.step() and scheduler_dict['scheduler'].step()
 
 
 model = LitModel(lr=0.05)
@@ -118,10 +126,8 @@ trainer = Trainer(
     progress_bar_refresh_rate=10,
     max_epochs=30,
     gpus=AVAIL_GPUS,
-    logger=TensorBoardLogger('lightning_logs/', name='resnet'),
-    callbacks=[
-        ModelCheckpoint(filename='best.ckpt')
-    ],
+    logger=TensorBoardLogger(default_hp_metric=False),
+    callbacks=[ModelCheckpoint(filename='best.ckpt')],
 )
 
 trainer.fit(model, cifar10_dm)

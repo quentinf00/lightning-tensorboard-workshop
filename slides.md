@@ -9,9 +9,9 @@
 ## Why Lightning ?
 
 **Engineering** vs **Research**
-- Infra
+- Infra (cpu, gpu, cluster)
 - managing logs
-- organizing code
+- organizing code (software engineering)
 - saving/loading models
 
 (popular, recommended on conf like neurips for reproducibility)
@@ -40,3 +40,7 @@ free, default, powerful, initial focus on training metrics
 	- logging the model graph
 	- logging the learning rate 
 	- Logging the profile of a training step 
+
+---
+
+## Let's start
