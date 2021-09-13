@@ -11,7 +11,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
-from pl_bolts.datamodules import TinyCIFAR10DataModule
+from pl_bolts.datamodules import CIFAR10DataModule
 from pl_bolts.transforms.dataset_normalizations import cifar10_normalization
 from pytorch_lightning import LightningModule, seed_everything, Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
@@ -41,10 +41,11 @@ test_transforms = torchvision.transforms.Compose([
     cifar10_normalization(),
 ])
 
-cifar10_dm = TinyCIFAR10DataModule(
+cifar10_dm = CIFAR10DataModule(
     data_dir='./datasets',
     batch_size=BATCH_SIZE,
     num_workers=NUM_WORKERS,
+    num_samples=200,
     train_transforms=train_transforms,
     test_transforms=test_transforms,
     val_transforms=test_transforms,
@@ -119,16 +120,22 @@ class LitModel(LightningModule):
         return {'optimizer': optimizer, 'lr_scheduler': scheduler_dict} # lightning will call opt.step() and scheduler_dict['scheduler'].step()
 
 
+# %% Instantiate model
+
 model = LitModel(lr=0.05)
 model.datamodule = cifar10_dm
 
+# %% Instantiate trainer
+
 trainer = Trainer(
-    progress_bar_refresh_rate=10,
     max_epochs=30,
     gpus=AVAIL_GPUS,
-    logger=TensorBoardLogger(default_hp_metric=False),
+    logger=TensorBoardLogger(save_dir='lightning_logs', default_hp_metric=False),
     callbacks=[ModelCheckpoint(filename='best.ckpt')],
 )
 
+# %% Train
 trainer.fit(model, cifar10_dm)
+
+# %% Test
 trainer.test(model, datamodule=cifar10_dm)
