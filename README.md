@@ -1,7 +1,6 @@
 # Pytorch Lightning & Tensorboard workshop
 ## Slides
 [View Here](https://hackmd.io/@TWdWuHLbTiaZunnZMRdmeA/S1ZSZinMt?type=slide)
-
 [Edit Here](https://hackmd.io/FKJI5TOCT0yRlrea9FxIdg?both)
 
 ## Exercise:

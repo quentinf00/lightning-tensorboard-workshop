@@ -15,7 +15,7 @@
 # ---
 
 # %%
-# !pip install "pytorch-lightning==1.4.5" "torchmetrics>=0.3" "tensorboard==2.6" "torch==1.9" "torchvision==0.10"
+# !pip install --silent "pytorch-lightning==1.4.5" "torchmetrics>=0.3" "tensorboard==2.6" "torch==1.9" "torchvision==0.10"
 
 # %% Imports
 
@@ -96,6 +96,7 @@ class LitMNIST(LightningModule):
     def on_test_epoch_start(self):
         # TODO 0: log test metrics in hparams tab
         # https://pytorch-lightning.readthedocs.io/en/latest/extensions/logging.html#logging-hyperparameters
+        self.logger.log_hyperparams(self.hparams, {'test_loss':0, 'test_acc': 0})
         ...
 
     def test_step(self, batch, batch_idx):
@@ -112,12 +113,10 @@ class LitMNIST(LightningModule):
         # Test epoch end doc: https://pytorch-lightning.readthedocs.io/en/latest/common/lightning_module.html#test-epoch-end
 
         # TODO 2: Log confusion matrix
-        # https://pytorch.org/docs/stable/tensorboard.html
         # https://pytorch-lightning.readthedocs.io/en/latest/extensions/generated/pytorch_lightning.loggers.TensorBoardLogger.html#pytorch_lightning.loggers.TensorBoardLogger.experiment
-        # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.ConfusionMatrixDisplay.html#sklearn.metrics.ConfusionMatrixDisplay
+        # https://www.tensorflow.org/tensorboard/image_summaries#building_an_image_classifier
 
         # TODO 5: Visualize the images wrongly predicted with the highest confidence
-        # https://pytorch.org/docs/stable/tensorboard.html
         ...
 
     def configure_optimizers(self):
@@ -145,13 +144,13 @@ class LitMNIST(LightningModule):
             self.mnist_test = MNIST(self.data_dir, train=False, transform=self.transform)
 
     def train_dataloader(self):
-        return DataLoader(self.mnist_train, batch_size=self.batch_size)
+        return DataLoader(self.mnist_train, batch_size=BATCH_SIZE)
 
     def val_dataloader(self):
-        return DataLoader(self.mnist_val, batch_size=self.batch_size)
+        return DataLoader(self.mnist_val, batch_size=BATCH_SIZE)
 
     def test_dataloader(self):
-        return DataLoader(self.mnist_test, batch_size=self.batch_size)
+        return DataLoader(self.mnist_test, batch_size=BATCH_SIZE)
 
 
 # %% Training
@@ -168,12 +167,12 @@ model = LitMNIST()
 # TODO 4: Log Model Graph in tensorboard
 # https://pytorch-lightning.readthedocs.io/en/latest/api/pytorch_lightning.loggers.tensorboard.html#pytorch_lightning.loggers.tensorboard.TensorBoardLogger.params.log_graph
 
-# TODO 6: Log the profile of a training step in tensorboard 
+# TODO 5: Log the profile of a training step in tensorboard 
 # https://pytorch-lightning.readthedocs.io/en/latest/advanced/profiler.html#pytorch-profiling
 # https://pytorch.org/tutorials/intermediate/tensorboard_profiler_tutorial.html#use-tensorboard-to-view-results-and-analyze-model-performance
 
 trainer = Trainer(
-    logger=TensorBoardLogger(save_dir='lightning_logs', name='mnist'),
+    logger=TensorBoardLogger(save_dir='lightning_logs', name='mnist', default_hp_metric=False),
     max_epochs=3,
     progress_bar_refresh_rate=10,
 )
