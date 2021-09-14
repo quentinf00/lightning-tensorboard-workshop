@@ -32,6 +32,7 @@ from torch.nn import functional as F
 from torch.utils.data import DataLoader, random_split
 from torchvision import transforms
 from torchvision.datasets import MNIST
+from matplotlib.pyplot as plt
 
 PATH_DATASETS = './datasets'
 
@@ -124,7 +125,8 @@ class LitMNIST(LightningModule):
         # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.ConfusionMatrixDisplay.html#sklearn.metrics.ConfusionMatrixDisplay
         cm = sklearn.metrics.confusion_matrix(y, preds)
         disp = sklearn.metrics.ConfusionMatrixDisplay(confusion_matrix=cm)
-        disp.plot()
+        fig, ax = plt.subplots()
+        disp.plot(ax=ax)
         self.logger.experiment.add_figure('Confusion Matrix', disp.figure_, global_step=self.current_epoch)
 
         # TODO 5: Visualize the images wrongly predicted with the highest confidence
