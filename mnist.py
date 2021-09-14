@@ -8,7 +8,14 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.11.4
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
 # ---
+
+# %%
+# !pip install --silent "pytorch-lightning==1.4.5" "torchmetrics>=0.3" "tensorboard==2.6" "torch==1.9" "torchvision==0.10"
 
 # %% Imports
 
@@ -171,5 +178,8 @@ trainer = Trainer(
 trainer.fit(model)
 
 # %% Testing
-
 trainer.test()
+
+# %% 
+# %reload_ext tensorboard
+# %tensorboard --logdir lightning_logs/
