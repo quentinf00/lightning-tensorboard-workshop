@@ -15,7 +15,7 @@
 # ---
 
 # %%
-# !pip install "pytorch-lightning==1.4.5" "torchmetrics>=0.3" "tensorboard==2.6" "torch==1.9" "torchvision==0.10"
+# !pip install "pytorch-lightning==1.4.5" "torchmetrics>=0.3" "tensorboard==2.6" "torch==1.9" "torchvision==0.10" "torch_tb_profiler"
 
 # %% Imports
 
@@ -171,9 +171,25 @@ model = LitMNIST()
 # https://pytorch-lightning.readthedocs.io/en/latest/advanced/profiler.html#pytorch-profiling
 # https://pytorch.org/tutorials/intermediate/tensorboard_profiler_tutorial.html#use-tensorboard-to-view-results-and-analyze-model-performance
 
+from pytorch_lightning.profiler import PyTorchProfiler
+
+profiler = PyTorchProfiler(
+    "lightning_logs/profile/results",
+    schedule=torch.profiler.schedule(wait=1, warmup=1, active=1),
+    activities=[
+        torch.profiler.ProfilerActivity.CPU,
+        torch.profiler.ProfilerActivity.CUDA,
+    ],
+    on_trace_ready=torch.profiler.tensorboard_trace_handler('./lightning_logs/profile/tb'),
+    record_shapes=True,
+    profile_memory=True,
+)
+
 trainer = Trainer(
     logger=TensorBoardLogger(save_dir='lightning_logs', name='mnist'),
-    max_epochs=3,
+    max_epochs=1,
+    profiler=profiler,
+    overfit_batches=3,
     progress_bar_refresh_rate=10,
 )
 trainer.fit(model)
@@ -183,4 +199,4 @@ trainer.test()
 
 # %%
 # %reload_ext tensorboard
-# %tensorboard --logdir lightning_logs/
+# %tensorboard --logdir lightning_logs/mnist
