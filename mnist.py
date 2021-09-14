@@ -117,6 +117,7 @@ class LitMNIST(LightningModule):
         # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.ConfusionMatrixDisplay.html#sklearn.metrics.ConfusionMatrixDisplay
 
         # TODO 5: Visualize the images wrongly predicted with the highest confidence
+        # https://pytorch.org/docs/stable/tensorboard.html
         ...
 
     def configure_optimizers(self):
