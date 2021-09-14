@@ -8,7 +8,14 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.11.4
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
 # ---
+
+# %%
+# !pip install "pytorch-lightning==1.4.5" "torchmetrics>=0.3" "tensorboard==2.6" "torch==1.9" "torchvision==0.10"
 
 # %% Imports
 
@@ -105,8 +112,9 @@ class LitMNIST(LightningModule):
         # Test epoch end doc: https://pytorch-lightning.readthedocs.io/en/latest/common/lightning_module.html#test-epoch-end
 
         # TODO 2: Log confusion matrix
+        # https://pytorch.org/docs/stable/tensorboard.html
         # https://pytorch-lightning.readthedocs.io/en/latest/extensions/generated/pytorch_lightning.loggers.TensorBoardLogger.html#pytorch_lightning.loggers.TensorBoardLogger.experiment
-        # https://www.tensorflow.org/tensorboard/image_summaries#building_an_image_classifier
+        # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.ConfusionMatrixDisplay.html#sklearn.metrics.ConfusionMatrixDisplay
 
         # TODO 5: Visualize the images wrongly predicted with the highest confidence
         ...
@@ -136,13 +144,13 @@ class LitMNIST(LightningModule):
             self.mnist_test = MNIST(self.data_dir, train=False, transform=self.transform)
 
     def train_dataloader(self):
-        return DataLoader(self.mnist_train, batch_size=BATCH_SIZE)
+        return DataLoader(self.mnist_train, batch_size=self.batch_size)
 
     def val_dataloader(self):
-        return DataLoader(self.mnist_val, batch_size=BATCH_SIZE)
+        return DataLoader(self.mnist_val, batch_size=self.batch_size)
 
     def test_dataloader(self):
-        return DataLoader(self.mnist_test, batch_size=BATCH_SIZE)
+        return DataLoader(self.mnist_test, batch_size=self.batch_size)
 
 
 # %% Training
@@ -159,7 +167,7 @@ model = LitMNIST()
 # TODO 4: Log Model Graph in tensorboard
 # https://pytorch-lightning.readthedocs.io/en/latest/api/pytorch_lightning.loggers.tensorboard.html#pytorch_lightning.loggers.tensorboard.TensorBoardLogger.params.log_graph
 
-# TODO 5: Log the profile of a training step in tensorboard 
+# TODO 6: Log the profile of a training step in tensorboard 
 # https://pytorch-lightning.readthedocs.io/en/latest/advanced/profiler.html#pytorch-profiling
 # https://pytorch.org/tutorials/intermediate/tensorboard_profiler_tutorial.html#use-tensorboard-to-view-results-and-analyze-model-performance
 
@@ -171,5 +179,8 @@ trainer = Trainer(
 trainer.fit(model)
 
 # %% Testing
-
 trainer.test()
+
+# %%
+# %reload_ext tensorboard
+# %tensorboard --logdir lightning_logs/
