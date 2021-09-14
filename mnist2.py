@@ -5,6 +5,7 @@ import os
 import torch
 from pytorch_lightning import LightningModule, Trainer
 from pytorch_lightning.metrics.functional import accuracy
+from pytorch_lightning.loggers import TensorBoardLogger
 from torch import nn
 from torch.nn import functional as F
 from torch.utils.data import DataLoader, random_split
@@ -12,19 +13,19 @@ from torchvision import transforms
 from torchvision.datasets import MNIST
 
 PATH_DATASETS = './datasets'
-AVAIL_GPUS = min(1, torch.cuda.device_count())
-BATCH_SIZE = 256 if AVAIL_GPUS else 64
 
 # %% Lit Module with data
 
 class LitMNIST(LightningModule):
 
-    def __init__(self, data_dir=PATH_DATASETS, hidden_size=64, learning_rate=2e-4):
+    def __init__(self, data_dir=PATH_DATASETS, hidden_size=64, learning_rate=2e-4, batch_size=64):
 
         super().__init__()
+        self.save_hyperparameters()
 
         # Set our init args as class attributes
         self.data_dir = data_dir
+        self.batch_size = batch_size
         self.hidden_size = hidden_size
         self.learning_rate = learning_rate
 
@@ -53,27 +54,50 @@ class LitMNIST(LightningModule):
         x = self.model(x)
         return F.log_softmax(x, dim=1)
 
-    def training_step(self, batch, batch_idx):
+    def evaluate_batch(self, batch): # Not a lightning method
         x, y = batch
         logits = self(x)
+        preds = torch.argmax(logits, dim=1)
+        return x, y, logits, preds
+
+    def training_step(self, batch, batch_idx):
+        x, y, logits, preds = self.evaluate_batch(batch)
         loss = F.nll_loss(logits, y)
         return loss
 
     def validation_step(self, batch, batch_idx):
-        x, y = batch
-        logits = self(x)
+        x, y, logits, preds = self.evaluate_batch(batch)
         loss = F.nll_loss(logits, y)
-        preds = torch.argmax(logits, dim=1)
         acc = accuracy(preds, y)
 
         # Calling self.log will surface up scalars for you in TensorBoard
         self.log('val_loss', loss, prog_bar=True)
         self.log('val_acc', acc, prog_bar=True)
-        return loss
+
+    def on_test_epoch_start(self):
+        # TODO 0: log test metrics in hparams tab
+        # https://pytorch-lightning.readthedocs.io/en/latest/extensions/logging.html#logging-hyperparameters
+        ...
 
     def test_step(self, batch, batch_idx):
         # Here we just reuse the validation_step for testing
-        return self.validation_step(batch, batch_idx)
+        x, y, logits, preds = self.evaluate_batch(batch)
+        loss = F.nll_loss(logits, y)
+        acc = accuracy(preds, y)
+
+        # Calling self.log will surface up scalars for you in TensorBoard
+        self.log('test_loss', loss, prog_bar=True, on_epoch=True)
+        self.log('test_acc', acc, prog_bar=True, on_epoch=True)
+
+    def test_epoch_end(self, outputs):
+        # Test epoch end doc: https://pytorch-lightning.readthedocs.io/en/latest/common/lightning_module.html#test-epoch-end
+
+        # TODO 2: Log confusion matrix
+        # https://pytorch-lightning.readthedocs.io/en/latest/extensions/generated/pytorch_lightning.loggers.TensorBoardLogger.html#pytorch_lightning.loggers.TensorBoardLogger.experiment
+        # https://www.tensorflow.org/tensorboard/image_summaries#building_an_image_classifier
+
+        # TODO 5: Visualize the images wrongly predicted with the highest confidence
+        ...
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
@@ -112,10 +136,25 @@ class LitMNIST(LightningModule):
 # %% Training
 
 model = LitMNIST()
+
+# TODO 1: Run the training on a GPU
+# https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html#gpus
+
+# TODO 3: Save the best model weights
+# https://pytorch-lightning.readthedocs.io/en/latest/common/weights_loading.html#automatic-saving
+# https://pytorch-lightning.readthedocs.io/en/latest/extensions/generated/pytorch_lightning.callbacks.ModelCheckpoint.html#pytorch_lightning.callbacks.ModelCheckpoint
+
+# TODO 4: Log Model Graph in tensorboard
+# https://pytorch-lightning.readthedocs.io/en/latest/api/pytorch_lightning.loggers.tensorboard.html#pytorch_lightning.loggers.tensorboard.TensorBoardLogger.params.log_graph
+
+# TODO 5: Log the profile of a training step in tensorboard 
+# https://pytorch-lightning.readthedocs.io/en/latest/advanced/profiler.html#pytorch-profiling
+# https://pytorch.org/tutorials/intermediate/tensorboard_profiler_tutorial.html#use-tensorboard-to-view-results-and-analyze-model-performance
+
 trainer = Trainer(
-    gpus=AVAIL_GPUS,
+    logger=TensorBoardLogger(save_dir='lightning_logs', name='mnist'),
     max_epochs=3,
-    progress_bar_refresh_rate=20,
+    progress_bar_refresh_rate=10,
 )
 trainer.fit(model)
 
