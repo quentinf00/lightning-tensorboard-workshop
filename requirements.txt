@@ -1,6 +1,5 @@
 pytorch-lightning==1.4.5
 torchmetrics>=0.3
-lighting-bolts
 tensorboard==2.6
 torch==1.9
 torchvision==0.10
