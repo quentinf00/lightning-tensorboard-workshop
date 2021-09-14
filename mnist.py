@@ -96,6 +96,7 @@ class LitMNIST(LightningModule):
     def on_test_epoch_start(self):
         # TODO 0: log test metrics in hparams tab
         # https://pytorch-lightning.readthedocs.io/en/latest/extensions/logging.html#logging-hyperparameters
+        self.logger.log_hyperparams(self.hparams, {'test_loss':0, 'test_acc': 0})
         ...
 
     def test_step(self, batch, batch_idx):
@@ -171,7 +172,7 @@ model = LitMNIST()
 # https://pytorch.org/tutorials/intermediate/tensorboard_profiler_tutorial.html#use-tensorboard-to-view-results-and-analyze-model-performance
 
 trainer = Trainer(
-    logger=TensorBoardLogger(save_dir='lightning_logs', name='mnist'),
+    logger=TensorBoardLogger(save_dir='lightning_logs', name='mnist', default_hp_metric=False),
     max_epochs=3,
     progress_bar_refresh_rate=10,
 )
@@ -180,6 +181,6 @@ trainer.fit(model)
 # %% Testing
 trainer.test()
 
-# %% 
+# %%
 # %reload_ext tensorboard
 # %tensorboard --logdir lightning_logs/
