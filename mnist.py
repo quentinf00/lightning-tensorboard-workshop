@@ -107,9 +107,12 @@ class LitMNIST(LightningModule):
         # Calling self.log will surface up scalars for you in TensorBoard
         self.log('test_loss', loss, prog_bar=True, on_epoch=True)
         self.log('test_acc', acc, prog_bar=True, on_epoch=True)
+        return x, y, logits, preds
 
     def test_epoch_end(self, outputs):
         # Test epoch end doc: https://pytorch-lightning.readthedocs.io/en/latest/common/lightning_module.html#test-epoch-end
+        # outputs = [(x1, y1, preds1), (x2, y2, preds2), ...]
+        x, y, logits, preds = (torch.cat(l, dim=0) for l in zip(*outputs))
 
         # TODO 2: Log confusion matrix
         # https://pytorch.org/docs/stable/tensorboard.html
@@ -117,6 +120,13 @@ class LitMNIST(LightningModule):
         # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.ConfusionMatrixDisplay.html#sklearn.metrics.ConfusionMatrixDisplay
 
         # TODO 5: Visualize the images wrongly predicted with the highest confidence
+        # https://pytorch.org/docs/stable/tensorboard.html
+        # https://pytorch-lightning.readthedocs.io/en/latest/extensions/generated/pytorch_lightning.loggers.TensorBoardLogger.html#pytorch_lightning.loggers.TensorBoardLogger.experiment
+        
+        errs_idx = (y != preds)
+        errs_img, errs_logits = x[errs_idx, ...], logits[errs_idx, ...]
+        top3_errs_idx = errs_logits.max(1)[0].argsort(0)[-3:]
+        self.logger.experiment.add_images('wrong prediction', errs_img[top3_errs_idx, ...])
         ...
 
     def configure_optimizers(self):
