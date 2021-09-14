@@ -25,7 +25,6 @@ import torch
 from pytorch_lightning import LightningModule, Trainer
 from pytorch_lightning.metrics.functional import accuracy
 from pytorch_lightning.loggers import TensorBoardLogger
-from pytorch_lightning.callbacks import ModelCheckpoint
 from torch import nn
 from torch.nn import functional as F
 from torch.utils.data import DataLoader, random_split
@@ -39,8 +38,8 @@ PATH_DATASETS = './datasets'
 class LitMNIST(LightningModule):
 
     def __init__(self, data_dir=PATH_DATASETS, hidden_size=64, learning_rate=2e-4, batch_size=64):
-
         super().__init__()
+        self.example_input_array = torch.randn(1, 28, 28)
         self.save_hyperparameters()
 
         # Set our init args as class attributes
@@ -161,10 +160,9 @@ model = LitMNIST()
 # TODO 1: Run the training on a GPU
 # https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html#gpus
 
-# TODO 3: Save the model weights with the best val accuracy
+# TODO 3: Save the model weights with the best accuracy
 # https://pytorch-lightning.readthedocs.io/en/latest/common/weights_loading.html#automatic-saving
 # https://pytorch-lightning.readthedocs.io/en/latest/extensions/generated/pytorch_lightning.callbacks.ModelCheckpoint.html#pytorch_lightning.callbacks.ModelCheckpoint
-model_checkpoint_cb = ModelCheckpoint(monitor='val_acc')
 
 # TODO 4: Log Model Graph in tensorboard
 # https://pytorch-lightning.readthedocs.io/en/latest/api/pytorch_lightning.loggers.tensorboard.html#pytorch_lightning.loggers.tensorboard.TensorBoardLogger.params.log_graph
@@ -174,9 +172,8 @@ model_checkpoint_cb = ModelCheckpoint(monitor='val_acc')
 # https://pytorch.org/tutorials/intermediate/tensorboard_profiler_tutorial.html#use-tensorboard-to-view-results-and-analyze-model-performance
 
 trainer = Trainer(
-    logger=TensorBoardLogger(save_dir='lightning_logs', name='mnist'),
-    callbacks=[model_checkpoint_cb],
-    max_epochs=3,
+    logger=TensorBoardLogger(save_dir='lightning_logs', name='mnist', log_graph=True),
+    max_epochs=1,
     progress_bar_refresh_rate=10,
 )
 trainer.fit(model)
