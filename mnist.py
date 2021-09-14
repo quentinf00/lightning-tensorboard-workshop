@@ -144,13 +144,13 @@ class LitMNIST(LightningModule):
             self.mnist_test = MNIST(self.data_dir, train=False, transform=self.transform)
 
     def train_dataloader(self):
-        return DataLoader(self.mnist_train, batch_size=BATCH_SIZE)
+        return DataLoader(self.mnist_train, batch_size=self.batch_size)
 
     def val_dataloader(self):
-        return DataLoader(self.mnist_val, batch_size=BATCH_SIZE)
+        return DataLoader(self.mnist_val, batch_size=self.batch_size)
 
     def test_dataloader(self):
-        return DataLoader(self.mnist_test, batch_size=BATCH_SIZE)
+        return DataLoader(self.mnist_test, batch_size=self.batch_size)
 
 
 # %% Training
