@@ -171,6 +171,7 @@ model = LitMNIST()
 # https://pytorch.org/tutorials/intermediate/tensorboard_profiler_tutorial.html#use-tensorboard-to-view-results-and-analyze-model-performance
 
 trainer = Trainer(
+    gpus=1,
     logger=TensorBoardLogger(save_dir='lightning_logs', name='mnist'),
     max_epochs=3,
     progress_bar_refresh_rate=10,
@@ -180,6 +181,6 @@ trainer.fit(model)
 # %% Testing
 trainer.test()
 
-# %% 
+# %%
 # %reload_ext tensorboard
 # %tensorboard --logdir lightning_logs/
