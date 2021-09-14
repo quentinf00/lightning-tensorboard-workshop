@@ -1,3 +1,15 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: title,-all
+#     formats: ipynb,py:percent
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.11.4
+# ---
+
 # %% Imports
 
 import os
@@ -5,6 +17,7 @@ import os
 import torch
 from pytorch_lightning import LightningModule, Trainer
 from pytorch_lightning.metrics.functional import accuracy
+from pytorch_lightning.loggers import TensorBoardLogger
 from torch import nn
 from torch.nn import functional as F
 from torch.utils.data import DataLoader, random_split
@@ -23,6 +36,7 @@ class LitMNIST(LightningModule):
 
         super().__init__()
 
+        self.save_hyperparameters()
         # Set our init args as class attributes
         self.data_dir = data_dir
         self.hidden_size = hidden_size
@@ -59,21 +73,38 @@ class LitMNIST(LightningModule):
         loss = F.nll_loss(logits, y)
         return loss
 
-    def validation_step(self, batch, batch_idx):
+    def evaluate_batch(self, batch):
         x, y = batch
         logits = self(x)
-        loss = F.nll_loss(logits, y)
         preds = torch.argmax(logits, dim=1)
-        acc = accuracy(preds, y)
+
+        return x, y, logits, preds
+    def validation_step(self, batch, batch_idx):
+        x, y, logits, preds = self.evaluate_batch(batch)
 
         # Calling self.log will surface up scalars for you in TensorBoard
-        self.log('val_loss', loss, prog_bar=True)
-        self.log('val_acc', acc, prog_bar=True)
-        return loss
+        self.log('val_loss', F.nll_loss(logits, y), prog_bar=True)
+        self.log('val_acc', accuracy(preds, y), prog_bar=True)
 
     def test_step(self, batch, batch_idx):
         # Here we just reuse the validation_step for testing
-        return self.validation_step(batch, batch_idx)
+        x, y, logits, preds = self.evaluate_batch(batch)
+
+        # Calling self.log will surface up scalars for you in TensorBoard
+        self.log('test_loss', F.nll_loss(logits, y), prog_bar=True)
+        self.log('test_acc', accuracy(preds, y), prog_bar=True)
+        return x, y, logits, preds
+
+    def test_epoch_end(self, outputs):
+        # outputs = [(x1, y1, preds1), (x2, y2, preds2), ...]
+        x, y, logits, preds = (torch.cat(l, dim=0) for l in zip(*outputs))
+        loss_test = F.nll_loss(logits, y)
+        acc_test = accuracy(preds, y)
+
+        self.logger.log_hyperparams(
+            {**self.hparams},
+            {'test_acc': acc_test, 'test_loss': loss_test},
+        )
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
@@ -114,7 +145,8 @@ class LitMNIST(LightningModule):
 model = LitMNIST()
 trainer = Trainer(
     gpus=AVAIL_GPUS,
-    max_epochs=3,
+    logger=TensorBoardLogger(save_dir='lightning_logs', default_hp_metric=False),
+    max_epochs=1,
     progress_bar_refresh_rate=20,
 )
 trainer.fit(model)
