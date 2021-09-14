@@ -4,7 +4,6 @@
 [Edit Here](https://hackmd.io/FKJI5TOCT0yRlrea9FxIdg?both)
 
 ## Exercise:
-
 Open the exercise notebook in Colab and start the TODO items [![Open the notebook in colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/quentinf00/lightning-tensorboard-workshop/blob/main/mnist.ipynb)
 
 - **TODO 0** -> Log the metrics and hyperparams in tensorboard

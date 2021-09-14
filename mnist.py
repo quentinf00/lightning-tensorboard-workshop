@@ -15,7 +15,7 @@
 # ---
 
 # %%
-# !pip install "pytorch-lightning==1.4.5" "torchmetrics>=0.3" "tensorboard==2.6" "torch==1.9" "torchvision==0.10" "seaborn"
+# !pip install "pytorch-lightning==1.4.5" "torchmetrics>=0.3" "tensorboard==2.6" "torch==1.9" "torchvision==0.10"
 
 # %% Imports
 
@@ -25,12 +25,12 @@ import torch
 from pytorch_lightning import LightningModule, Trainer
 from pytorch_lightning.metrics.functional import accuracy
 from pytorch_lightning.loggers import TensorBoardLogger
+from pytorch_lightning.callbacks import ModelCheckpoint
 from torch import nn
 from torch.nn import functional as F
 from torch.utils.data import DataLoader, random_split
 from torchvision import transforms
 from torchvision.datasets import MNIST
-import sklearn.metrics
 
 PATH_DATASETS = './datasets'
 
@@ -108,22 +108,14 @@ class LitMNIST(LightningModule):
         # Calling self.log will surface up scalars for you in TensorBoard
         self.log('test_loss', loss, prog_bar=True, on_epoch=True)
         self.log('test_acc', acc, prog_bar=True, on_epoch=True)
-        return x, y, logits, preds
 
     def test_epoch_end(self, outputs):
         # Test epoch end doc: https://pytorch-lightning.readthedocs.io/en/latest/common/lightning_module.html#test-epoch-end
 
-        # outputs = [(x1, y1, preds1), (x2, y2, preds2), ...]
-        x, y, logits, preds = (torch.cat(l, dim=0) for l in zip(*outputs))
-
         # TODO 2: Log confusion matrix
+        # https://pytorch.org/docs/stable/tensorboard.html
         # https://pytorch-lightning.readthedocs.io/en/latest/extensions/generated/pytorch_lightning.loggers.TensorBoardLogger.html#pytorch_lightning.loggers.TensorBoardLogger.experiment
-        # https://www.tensorflow.org/tensorboard/image_summaries#building_an_image_classifier
         # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.ConfusionMatrixDisplay.html#sklearn.metrics.ConfusionMatrixDisplay
-        cm = sklearn.metrics.confusion_matrix(y, preds)
-        disp = sklearn.metrics.ConfusionMatrixDisplay(confusion_matrix=cm)
-        disp.plot()
-        self.logger.experiment.add_figure('Confusion Matrix', disp.figure_, global_step=self.current_epoch)
 
         # TODO 5: Visualize the images wrongly predicted with the highest confidence
         ...
@@ -169,9 +161,10 @@ model = LitMNIST()
 # TODO 1: Run the training on a GPU
 # https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html#gpus
 
-# TODO 3: Save the best model weights
+# TODO 3: Save the model weights with the best val accuracy
 # https://pytorch-lightning.readthedocs.io/en/latest/common/weights_loading.html#automatic-saving
 # https://pytorch-lightning.readthedocs.io/en/latest/extensions/generated/pytorch_lightning.callbacks.ModelCheckpoint.html#pytorch_lightning.callbacks.ModelCheckpoint
+model_checkpoint_cb = ModelCheckpoint(monitor='val_acc')
 
 # TODO 4: Log Model Graph in tensorboard
 # https://pytorch-lightning.readthedocs.io/en/latest/api/pytorch_lightning.loggers.tensorboard.html#pytorch_lightning.loggers.tensorboard.TensorBoardLogger.params.log_graph
@@ -182,6 +175,7 @@ model = LitMNIST()
 
 trainer = Trainer(
     logger=TensorBoardLogger(save_dir='lightning_logs', name='mnist'),
+    callbacks=[model_checkpoint_cb],
     max_epochs=3,
     progress_bar_refresh_rate=10,
 )
