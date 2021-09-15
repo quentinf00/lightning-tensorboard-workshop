@@ -17,3 +17,12 @@ Open the exercise notebook in Colab and start the TODO items [![Open the noteboo
 - **TODO 6** -> Log the profile (GPU memory, CPU usage...) on a training step in tensorboard
 
 
+## Solutions:
+
+The solutions can be found on the branches todo-[0-6]-sol
+And the final notebook on the branch all-solutions
+
+## Additional Material
+
+If you're interested in knowing more, I highly encourage you to check out the pytorch lightning tutorials: 
+https://pytorch-lightning.readthedocs.io/en/latest/#tutorials
